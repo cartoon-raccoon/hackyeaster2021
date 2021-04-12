@@ -1,5 +1,13 @@
 # Digizzled
 
+## Problem Text
+
+_Had a flag, but it got digizzled. Can you recover it?_
+
+---
+
+Digizzle was a reverse engineering challenge where participants had to reverse-engineer a script to recover the flag.
+
 The [file](digizzle) provided by the organizers was a text file containing disassembled python bytecode, most likely generated using `dis`, a python module.
 
 Along with that was the following output:
@@ -19,7 +27,7 @@ digizzling...
 c5ab05ca73f205ca  
 ```
 
-The creator of this puzzle was clever in that by giving me python bytecode assembly (text), I could not rely on a decompiler to recreate the original python code. Thus began the task of manually decompiling the bytecode assembly.
+The creator of this puzzle was clever in that by giving out python bytecode assembly (text), I could not rely on a decompiler to recreate the original python code, which normally requires binary Python bytecode. Thus began the task of manually decompiling the bytecode assembly.
 
 ## The Main Program
 
