@@ -134,6 +134,8 @@ So here, we can see that the variable `pattern` is loaded onto the stack, follow
             184 RETURN_VALUE
 ```
 
+Which evaluates to a call to `print()` to print an error message.
+
 So what we are looking at here is clearly an if-else statement. This evaluates to the following Python code:
 
 ```python
@@ -174,7 +176,7 @@ So at first glance we know that we are calling a function, as evidenced by the `
             152 BINARY_SUBSCR
 ```
 
-So first, three constants are pushed onto the stack: `None`, `None` and `-1`. Following that is the BUILD_SLICE opcode. A quick glance at the [opcode reference](http://unpyc.sourceforge.net/Opcodes.html) shows us that BUILD_SLICE constructs a Python slice.
+So first, three constants are pushed onto the stack: `None`, `None` and `-1`. Following that is the `BUILD_SLICE` opcode. A quick glance at the opcode [reference](http://unpyc.sourceforge.net/Opcodes.html) shows us that `BUILD_SLICE` constructs a Python slice.
 
 A slice in Python is a way of manipulating lists. Using a slice, one can start from and end at a certain index, and step over elements. A slice follows the construct:
 
@@ -182,7 +184,7 @@ A slice in Python is a way of manipulating lists. Using a slice, one can start f
 item[x:y:z]
 ```
 
-Where x is the starting index, y is the ending index, and z is the step over. If nothing is placed there, `None` is used. Thus, that is what the three `LOAD_CONST` operations were for. After that, BUILD_SLICE is executed with an operand of 3. This means that all three slice operands are used. In this case, starting and ending are `None`, and step over is -1. This means the slice contains all its elements in reverse order. Since `s` is a string (i.e. a list of characters), this means the slice contains `s` in reverse.
+Where x is the starting index, y is the ending index, and z is the step over. If nothing is placed there, `None` is used. Thus, that is what the three `LOAD_CONST` operations were for. After that, `BUILD_SLICE` is executed with an operand of 3. This means that all three slice operands are used. In this case, starting and ending are `None`, and step over is -1. This means the slice contains all its elements in reverse order. Since `s` is a string (i.e. a list of characters), this means the slice contains `s` in reverse.
 
 The next OPCODE is `BINARY_SUBSCR`. Another quick glance at the reference shows that this opcode indexes into the item on top of the stack. So, to put it all together, this is the Python code it corresponds to:
 
