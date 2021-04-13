@@ -244,3 +244,263 @@ else:
 Great! Now let's see what hizzle and smizzle do.
 
 ## Decompiling the functions
+
+The bytecode assembly for the functions can be found near the bottom of the file:
+
+```text
+Disassembly of <code object hizzle at 0x10b3ad270, file "digizzle.py", line 4>:
+  5           0 LOAD_CONST               1 (13)
+              2 STORE_FAST               1 (s1)
+
+  6           4 LOAD_CONST               2 (37)
+              6 STORE_FAST               2 (s2)
+
+  7           8 SETUP_LOOP              52 (to 62)
+             10 LOAD_GLOBAL              0 (range)
+             12 LOAD_GLOBAL              1 (len)
+             14 LOAD_FAST                0 (s)
+...
+```
+
+Back at the start of the file, we saw the main program execute the `MAKE_FUNCTION` opcode. This causes the VM to jump to the location of the `hizzle` code object and compile the code it finds there.
+
+Let's look at what each function does.
+
+### `hizzle`
+
+The function begins with the following bytecode:
+
+```text
+  5           0 LOAD_CONST               1 (13)
+              2 STORE_FAST               1 (s1)
+
+  6           4 LOAD_CONST               2 (37)
+              6 STORE_FAST               2 (s2)
+```
+
+This seems obvious enough: Constant values are pushed onto the stack, and are stored in memory.
+
+This evaluates to the following code:
+
+```python
+s1 = 13
+s2 = 37
+```
+
+The next few lines are where it gets interesting:
+
+```text
+  7           8 SETUP_LOOP              52 (to 62)
+             10 LOAD_GLOBAL              0 (range)
+             12 LOAD_GLOBAL              1 (len)
+             14 LOAD_FAST                0 (s)
+             16 CALL_FUNCTION            1
+             18 CALL_FUNCTION            1
+             20 GET_ITER
+        >>   22 FOR_ITER                36 (to 60)
+             24 STORE_FAST               3 (n)
+```
+
+There's some opcodes we've never seen before, but they seem pretty self-explanatory. But first, some more info on the Python VM.
+
+The Python VM maintains more than one stack. Its main stack consists of the stack frames of all the functions currently running. The base of the stack is the stack frame of the `__main__` function, which is the entry point of every Python program.
+
+Within each stack frame, Python also maintains an evaluation frame. This allows Python to keep track of stack variables.
+
+Lastly, Python maintains a block stack. This tracks the level of nesting Python is at. Every time code execution enters a block, like a `try except` block, `if else` block or a loop, a new block is pushed onto the block stack.
+
+With that in mind, let's look at the bytecode.
+
+The first opcode is the `SETUP_LOOP` opcode. This tells Python to push a loop block onto the block stack. Now, we know that we are setting up for a loop.
+
+The next two opcodes call the global names `range` and `len`. To any experienced Python user, they will know that these two names refer to two of Python's built in functions. `range` creates an iterable object from a given integer value. `len` gets the length of any iterable or mappable object, like a list, string, or dictionary.
+
+After this, the opcode LOAD_FAST appears. This just loads the name `s` and pushes it onto the stack. This is followed by two `CALL_FUNCTION` opcodes. At this point, we can be fairly sure we are calling `len(s)` within `range()`.
+
+The next two opcodes set up the iterator for the loop. `GET_ITER` converts the item on top of the stack (TOS) into an iterator, which is consumed by the next opcode, `FOR_ITER`. This opcode tells Python that the item at the top of the stack is an iterator, so it calls another inbuilt function `next()` on the TOS. Also, `FOR_ITER`'s operands show that it goes to location 60. What's just before location 60?
+
+```text
+             58 JUMP_ABSOLUTE           22
+        >>   60 POP_BLOCK
+```
+
+We can see that the VM does an unconditional jump back to location 22, which is the location of the `FOR_ITER` opcode! Right below that is the `POP_BLOCK` opcode, which removes the loop block from the block stack.
+
+The final opcode stores the TOS into the variable `n`. This value is the return value of the `next()` function call.
+
+So, we can infer that this block of bytecode corresponds to the following Python code:
+
+```python
+for n in range(len(s)):
+    pass # ???
+```
+
+So, what's inside the loop?
+
+After the initial loop setup is the following bytecode:
+
+```text
+  8          26 LOAD_FAST                1 (s1)
+             28 LOAD_GLOBAL              2 (ord)
+             30 LOAD_FAST                0 (s)
+             32 LOAD_FAST                3 (n)
+             34 BINARY_SUBSCR
+             36 CALL_FUNCTION            1
+             38 BINARY_ADD
+             40 LOAD_CONST               3 (65521)
+             42 BINARY_MODULO
+             44 STORE_FAST               1 (s1)
+```
+
+Nothing we haven't seen before. Let's go over this quickly.
+
+- We push `s1` onto the stack.
+- We load the global name `ord`. This corresponds to the `ord()` function, which takes a character and returns its representing integer.
+- We push `s` and `n` onto the stack.
+- We execute `BINARY_SUBSCR`, which performs the indexing operation, indexing into the `n`th element of `s`.
+- We call `ord()` on the result of the `BINARY_SUBSCR` operation.
+- At this point, the return value of `ord(s[n])` is TOS, and just below it is the value of `s1` as TOS1. Next up is the opcode `BINARY_ADD`, which does exactly what it says: it pops TOS and TOS1 off the stack and adds them together, pushing the result onto the stack.
+- We push the constant 65521 onto the stack. At this point, 65521 is TOS and the result of the add operation is TOS1.
+- We perform `BINARY_MODULO` on TOS and TOS1, pushing the result back on the stack.
+- We store TOS back into s1.
+
+That was a lot, but we aren't done yet. Right after that is this bytecode:
+
+```text
+  9          46 LOAD_FAST                1 (s1)
+             48 LOAD_FAST                2 (s2)
+             50 BINARY_MULTIPLY
+             52 LOAD_CONST               3 (65521)
+             54 BINARY_MODULO
+             56 STORE_FAST               2 (s2)
+```
+
+You know the drill. Let's do this.
+
+- We push `s1` and `s2` onto the stack.
+- We execute `BINARY_MULTIPLY`, which multiplies TOS and TOS1 together (duh). In this case, `s1` and `s2` are the operands.
+- We push the constant 65521 onto the stack (again!)
+- We perform `BINARY_MODULO` (again!)
+- We then store the result into `s2`.
+
+Once we finish the loop (i.e. `range(len(s))` returns `None`), we exit and pop the block off the stack.
+
+Whew! We can now show what the for loop looks like:
+
+```python
+for n in range(len(s)):
+    s1 = (s1 + ord(s[n])) % 65521
+    s2 = (s1 * s2) % 65521
+```
+
+To round off the function, right after the loop is the following bytecode:
+
+```text
+ 10     >>   62 LOAD_FAST                2 (s2)
+             64 LOAD_CONST               4 (16)
+             66 BINARY_LSHIFT
+             68 LOAD_FAST                1 (s1)
+             70 BINARY_OR
+             72 RETURN_VALUE
+```
+
+This is the ending bit of the function, and it's nothing we haven't seen.
+
+- We push `s2` onto the stack.
+- We push the constant 16 onto the stack.
+- We perform the `BINARY_LSHIFT` operation, which shifts `s2` bitwise left by 16.
+- We push `s1` onto the stack. At this point, `s1` is TOS, and the result of the bitshift operation is TOS1.
+- We perform `BINARY_OR`, which performs bitwise OR on TOS and TOS1.
+- We return the value and exit the function.
+
+Great! We now have a pretty good idea of what `hizzle` looks like:
+
+```python
+def hizzle(s):
+    s1 = 13
+    s2 = 37
+
+    for n in range(len(s)):
+        s1 = (s1 + ord(s[n])) % 65521
+        s2 = (s1 * s2) % 65521
+    
+    return (s1 << 16) | s1
+```
+
+Nice! Now let's look at `smizzle`.
+
+### `smizzle`
+
+Compared to `hizzle`, `smizzle` is downright simple. The entire function is the following bytecode:
+
+```text
+Disassembly of <code object smizzle at 0x10b3ad9c0, file "digizzle.py", line 12>:
+ 13           0 LOAD_GLOBAL              0 (format)
+              2 LOAD_FAST                0 (a)
+              4 LOAD_CONST               1 ('x')
+              6 CALL_FUNCTION            2
+              8 LOAD_GLOBAL              0 (format)
+             10 LOAD_FAST                1 (b)
+             12 LOAD_CONST               1 ('x')
+             14 CALL_FUNCTION            2
+             16 BINARY_ADD
+             18 RETURN_VALUE
+```
+
+Let's give it the usual treatment.
+
+- We load the global name `format`, corresponding to the Python builtin `format`, which formats a given string according to user-specified parameters.
+- We load the `a` onto the stack.
+- We load the constant string `'s'` onto the stack.
+- We execute `CALL_FUNCTION`, which calls `format()` on TOS and TOS1.
+
+And then we do it all over again for `b`.
+
+Finally we call `BINARY_ADD` on the results of both `format()` calls. In Python, this performs string concatenation, joining the two strings together. This result is then returned.
+
+So now, we can see what `smizzle` looks like:
+
+```python
+def smizzle(a, b):
+    return format(a, 'x') + format(b, 'x')
+```
+
+A quick glance at the Python documentation shows that `format()`, when passed 'x' as its format parameter, returns the hexadecimal notation of its first parameter. So, for example, `format(255, 'x')` returns `'ff'`.
+
+Amazing! We can now put together the entire script!
+
+```python
+import re
+
+pattern = re.compile('^he2021\\{([dlsz134]){9}\\}$')
+
+def hizzle(s):
+    s1 = 13
+    s2 = 37
+
+    for n in range(len(s)):
+        s1 = (s1 + ord(s[n])) % 65521
+        s2 = (s1 * s2) % 65521
+    
+    return (s1 << 16) | s1
+
+def smizzle(a, b):
+    return format(a, 'x') + format(b, 'x')
+
+# printing out the logo
+# ...
+
+s = input("Enter flag: ")
+
+if not pattern.match(s):
+    print('Wrong format!')
+else:
+    a = hizzle(s)
+    b = hizzle(s[::-1])
+
+    print(smizzle(a, b))
+```
+
+Great! Now let's go find that flag!
+
+## Finding the Flag
