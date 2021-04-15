@@ -504,3 +504,55 @@ else:
 Great! Now let's go find that flag!
 
 ## Finding the Flag
+
+To find the flag, let's go back to the original output provided:
+
+```text
+c5ab05ca73f205ca  
+```
+
+From the reconstructed script, we can see that the output is a concatenation of two numbers: `hizzle(flag)` and `hizzle(flag[::-1])`. The first thought from here would be to take the first half of the output and work backwards through the `hizzle()` function, but there's a problem: some of the operations in `hizzle` are lossy; that is, for an operation `a <operation> b = c`, given `a` and `c`, it is impossible to find `b`. In particular, bitwise OR and modulo functions are borderline impossible to do. `hizzle()` in essence is a hash function: It easily performs a function one way, but is very difficult to do backwards.
+
+Of course, however, there is another way. Let's take a look at the regex given to check whether the flag is in the correct format:
+
+```text
+^he2021\\{([dlsz134]){9}\\}$
+```
+
+The characters `^` and `$` on the front and back of the regex are for asserting that the enclosed text is all that is given and matches completely. After that of course, we see the requisite format of `he2021{<flag>}` that all flags must have. But where we can find a clue as to the flag is inside the curly brackets. Inside is this rule:
+
+```text
+([dlsz134]){9}
+```
+
+This means that for a pattern to match this rule, it can only contain characters that appear in the list `[dlsz134]`, and the string must be exactly 9 characters long.
+
+So now we have some pretty big clues as to the identity of our flag. How are we going to find it? With good old fashioned brute-forcing, of course!
+
+To help us find every permutation of the characters `[dlsz134]`, we can use the Python `itertools` library, specifically its `product()` function. This takes a list, the length of each permutation, and returns an iterator over every permutation of the list.
+
+So, we can now bruteforce this by modifying the script like so:
+
+```python
+for s in product("dlsz134", repeat=9):
+    string = "he2021{" + "".join(s) + "}"
+    a = hizzle(string)
+    b = hizzle(string[::-1])
+
+    final = smizzle(a, b)
+
+    if final == "c5ab05ca73f205ca":
+        print(final, string)
+```
+
+This iterates over every result in `product("dlsz134")`, formats it into the flag format string, and feeds it into `hizzle()` and `smizzle()`. It then compares the result to the given output string, and prints out any match.
+
+And now, we can find our flag!
+
+```text
+$ python digizzle.py
+c5ab05ca73f205ca he2021{d1s4zzl3d}
+```
+
+---
+*Flag:* `he2021{d1s4zzl3d}`
