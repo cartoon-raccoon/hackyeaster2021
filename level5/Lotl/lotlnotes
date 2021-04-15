@@ -1,0 +1,4 @@
+Simple gets-system("/bin/sh") buffer overflow affair
+
+Fill the stack up to the saved instruction pointer
+
