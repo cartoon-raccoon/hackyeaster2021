@@ -1,5 +1,6 @@
 from pwn import *
 
+# conn = process("./lotl")
 conn = remote("46.101.107.117", 2102)
 
 conn.recvuntil(b'> ')
