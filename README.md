@@ -2,4 +2,4 @@
 
 This repository contains the various writeups for the Hacky Easter CTF 2021.
 
-Done by sammy (@cartoon-raccoon).
+Done by sammy (@cartoon-raccoon) and nat (@natashaty888).
