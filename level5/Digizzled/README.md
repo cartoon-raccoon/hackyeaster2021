@@ -511,7 +511,7 @@ To find the flag, let's go back to the original output provided:
 c5ab05ca73f205ca  
 ```
 
-From the reconstructed script, we can see that the output is a concatenation of two numbers: `hizzle(flag)` and `hizzle(flag[::-1])`. The first thought from here would be to take the first half of the output and work backwards through the `hizzle()` function, but there's a problem: some of the operations in `hizzle` are lossy; that is, for an operation `a <operation> b = c`, given `a` and `c`, it is impossible to find `b`. In particular, bitwise OR and modulo functions are borderline impossible to do. `hizzle()` in essence is a hash function: It easily performs a function one way, but is very difficult to do backwards.
+From the reconstructed script, we can see that the output is a concatenation of two numbers: `hizzle(flag)` and `hizzle(flag[::-1])`. The first thought from here would be to take the first half of the output and work backwards through the `hizzle()` function, but there's a problem: some of the operations in `hizzle` are lossy; that is, for an operation `a <operation> b = c`, given `a` and `c`, it is impossible to find `b`. In particular, bitwise OR and modulo functions are impossible to reverse properly. `hizzle()` in essence is a hash function: It easily performs a function one way, but is very difficult to do backwards.
 
 Of course, however, there is another way. Let's take a look at the regex given to check whether the flag is in the correct format:
 
