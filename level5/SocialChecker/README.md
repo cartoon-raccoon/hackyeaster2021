@@ -44,7 +44,7 @@ function doCheck() {
 }
 ```
 
-Turns out this function is just a stub that sends a POST request to a PHP program that actually does the heavy lifting. This function also sends the selected url in JSON format.
+Turns out this function is just a stub that sends a POST request to a PHP program that actually does the heavy lifting. This function also sends the selected url inside the POST data.
 
 One of the many techniques that a hacker can use when exploiting a PHP script is command injection. PHP scripts often call system functions and pipe their input back for processing before sending it back to the user. These system functions are called using the `system()` function much like in C. This function accepts shell syntax, which means if the input is not sanitized before being passed to `system`, we can inject our commands using shell syntax to chain the commands together.
 
