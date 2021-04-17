@@ -17,21 +17,21 @@ Let's look at the HTML:
 
 ```html
 <body>
-        <h1>Social Checker</h1>
-        Check if your favourite social media site is online!<br/><br/>
-        <select id="url">
-          <option value="twitter.com">twitter.com</option>
-          <option value="facebook.com">facebook.com</option>
-          <option value="linkedin.com">linkedin.com</option>
-          <option value="instagram.com">instagram.com</option>
-          <option value="pinterest.com">pinterest.com</option>
-          <option value="tumblr.com">tumblr.com</option>
-          <option value="wechat.com">wechat.com</option>
-          <option value="whatsapp.com">whatsapp.com</option>
-        </select><br/><br/>
-        <input id="submit" type="submit" value="Check it!" onclick="javascript:doCheck();"/><br/><br/>
-        <div class="box" id="result"></div>
-    </body>
+    <h1>Social Checker</h1>
+    Check if your favourite social media site is online!<br/><br/>
+    <select id="url">
+      <option value="twitter.com">twitter.com</option>
+      <option value="facebook.com">facebook.com</option>
+      <option value="linkedin.com">linkedin.com</option>
+      <option value="instagram.com">instagram.com</option>
+      <option value="pinterest.com">pinterest.com</option>
+      <option value="tumblr.com">tumblr.com</option>
+      <option value="wechat.com">wechat.com</option>
+      <option value="whatsapp.com">whatsapp.com</option>
+    </select><br/><br/>
+    <input id="submit" type="submit" value="Check it!" onclick="javascript:doCheck();"/><br/><br/>
+    <div class="box" id="result"></div>
+</body>
 ```
 
 From this, we can see that when the select button is clicked, it calls a JavaScript `doCheck()` function embedded in the HTML. This function is defined earlier in the source:
@@ -46,9 +46,9 @@ function doCheck() {
 
 Turns out this function is just a stub that sends a POST request to a PHP program that actually does the heavy lifting. This function also sends the selected url inside the POST data.
 
-One of the many techniques that a hacker can use when exploiting a PHP script is command injection. PHP scripts often call system functions and pipe their input back for processing before sending it back to the user. These system functions are called using the `system()` function much like in C. This function accepts shell syntax, which means if the input is not sanitized before being passed to `system`, we can inject our commands using shell syntax to chain the commands together.
+One of the many techniques that a hacker can use when exploiting a PHP script is command injection. PHP scripts often call system shell commands and pipe their input back for processing before sending it back to the user. These system commands are called using the `system()` function much like in C. This function accepts shell syntax, which means if the input is not sanitized before being passed to `system`, we can inject our commands by using shell syntax to chain the commands together.
 
-So how do we send these commands? Through the url field in the POST data. We can do this by tampering with the browser dev tools (I use Firefox). When we look at the request payload, we see this:
+We can inject these commands through the url field in the POST data, which can be done by playing around with the browser dev tools (I use Firefox). When we look at the request payload, we see this:
 
 `url=twitter.com`
 
@@ -70,7 +70,7 @@ Aha! Turns out this PHP script uses netcat to check the site availability. Since
 url=; ls
 ```
 
-Here we assume that the string passed to netcat becomes `nc; ls`.
+Here we assume that the string passed to `system()` becomes `nc; ls`.
 Since `nc` fails due to invalid input, `ls` gets executed instead and its output gets sent back to us.
 
 We get this response:
@@ -79,9 +79,7 @@ We get this response:
 nice try - www.youtube.com/watch?v=a4eav7dFvc8
 ```
 
-```text
 :(
-```
 
 Alright, it looks like the script is filtering out certain characters, so we need to find a workaround. Since `nc` fails, instead of using unconditional chaining, we can use the Bash OR operator. This is used to chain commands together, and causes the second command to be executed only if the first command fails. For example:
 
@@ -109,9 +107,7 @@ And this was the response:
 nice try - www.youtube.com/watch?v=a4eav7dFvc8
 ```
 
-```text
 D:<
-```
 
 Alright, so it looks like either whitespace or the pipe character is also banned. Let's try it without whitespace and see what happens:
 
@@ -141,7 +137,7 @@ $ echo${IFS}hello
 hello
 ```
 
-This means that we can send a string that doesn't contain any whitespace and thus won't get rejected by the script, but when the command gets passed to Bash via `system()`, it gets split correctly. Let's give it a try:
+This means that we can send a string that doesn't contain any whitespace and thus won't get rejected by the script, but when the command gets passed to Bash via `system()`, it still gets split correctly. Let's give it a try:
 
 ```text
 url=insta||ls${IFS}$PWD
