@@ -450,8 +450,8 @@ Disassembly of <code object smizzle at 0x10b3ad9c0, file "digizzle.py", line 12>
 Let's give it the usual treatment.
 
 - We load the global name `format`, corresponding to the Python builtin `format`, which formats a given string according to user-specified parameters.
-- We load the `a` onto the stack.
-- We load the constant string `'s'` onto the stack.
+- We load `a` onto the stack.
+- We load the constant string `'x'` onto the stack.
 - We execute `CALL_FUNCTION`, which calls `format()` on TOS and TOS1.
 
 And then we do it all over again for `b`.
